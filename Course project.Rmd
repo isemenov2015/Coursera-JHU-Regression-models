@@ -1,0 +1,103 @@
+---
+title: "JHU/Coursera Regression Models course project"
+author: "Ilya Semenov"
+date: "29/05/2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+Project goal is to explore MTCARS dataset and to name and quantify key automobile parameters that have influence on fuel consumption expressed in MPG that is miles per gallon consumption.
+Two particular questions of interest are:
+
+* Is an automatic or manual transmission better for MPG?
+* Is it possible to quantify the MPG difference between automatic and manual transmissions?
+
+Exploratory data analysis, statistical inference and regression modelling were used to perform the analysis.
+
+According to the **mtcars** dataset automobile fuel consumption mostly defined by No of cylinders and car weight. There is no enough proof found that transmission type has influence on MPG.
+
+##Data loading and processing
+
+Since **mtcars** dataset is preinstalled in R, we just use *data* command to load the data.
+
+```{r}
+data(mtcars)
+head(mtcars, 3)
+```
+
+##Exploratory data analysis
+
+```{r}
+dim(mtcars)
+```
+
+The dataset consists of 32 observations of 11 variables.
+An overview of **mpg** for auto and manual transmissions plot (see Fig. 1 in Appendix section) suggests that manual transmissions cars have higher fuel consumption level. We will check this assumption with further analysis. Also pairwise scatterplots (see Fig. 2 in Appendix) suggest noticeble correlations between **mpg** and **cyl**, **disp**, **hp**, **vs**, **gear** and **carb** variables.
+
+##Statistical inference for MPG with different transmission types
+
+Let check if the difference in fuel consumption between auto and manual transmission cars is statistically significant. Our null hypothesis is that fuel consumption for auto and manual transmission cars is the same.
+
+```{r}
+ttest <- t.test(mtcars$mpg ~ mtcars$am)
+ttest$p.value
+ttest$estimate
+```
+
+Since P-value obtained is small we reject the null hypothesis and can claim that according to **mtcars** data manual transmission cars have higher mpg than the auto ones with the means difference about 7. But we still need to check the influence of other variables.
+
+##Regression analysis
+
+Firstly, let check the influence level of all predictor variables.
+```{r}
+infl <- aov(mpg ~ ., data = mtcars)
+summary(infl)
+```
+
+According to p-values obtained No of cylinders and weight are the most influential on **mpg**. **am** is only the 5th in mpg-influence rate. Let build a linear model for top-5 mpg-influence variables.
+
+```{r}
+fit <- lm(mpg ~ cyl+wt+disp+drat+am, data = mtcars)
+summary(fit)$coef
+```
+
+Due to high p-values we can remove **drat** and **disp** variables from the model and leave **am** just for the sake of initial task. The final linear model is as follows:
+
+```{r}
+fit <- lm(mpg ~ cyl+wt+am, data = mtcars)
+summary(fit)$r.squared
+summary(fit)$coef
+```
+
+The model explains about 83% of data variability and since **am** p-value is high (**am** p-value = 0.89) we fail to reject the hypothesis that coefficient of **am** variable in a linear model equals to zero.
+For final testing we will consider model residuals (see Fig. 3 in Appendix section). There is no clear patterns in Residuals vs Fitted graph, Normal Q-Q plot suggests the model fits normality criteria, Scale-Location plot shows no abnormal variation jumps, Residuals vs Leverage shows all residuals in acceptable ranges. 
+
+So our final claim is as follows: according to the **mtcars** dataset automobile fuel consumption mostly defined by No of cylinders and car weight. There is no enough proofs found that transmission type has influence on mpg.
+
+\newpage
+##Appendix
+```{r}
+mtcars$am <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+boxplot(mpg ~ am, data = mtcars, xlab = "Transmission type", 
+        ylab = "MPG")
+title(sub = "Figure 1. MPG plots for different transmission types")
+```
+
+```{r}
+pairs(mpg ~ ., data = mtcars)
+title(sub = "Figure 2. Scatterplots of *mtcars* variables pairs")
+```
+
+```{r}
+pp <- par(mfrow = c(2,2))
+plot(fit)
+par(pp)
+```
+                  
+#####Figure 3. Final linear model verification
+                              
